@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>🎬 Movie Caption & Hashtag Generator (Free)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fadeIn 0.6s ease-in-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .small-muted { font-size: .85rem; color: #9CA3AF; }
+    .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid white; border-radius: 50%; width:18px; height:18px; animation: spin 1s linear infinite; display:inline-block; vertical-align: middle; margin-left:8px;}
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .tag { background: rgba(255,255,255,0.05); padding:4px 8px; border-radius:999px; font-size:0.85rem; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen flex items-center justify-center p-6 text-white">
+  <div class="w-full max-w-2xl bg-gray-800/70 rounded-2xl p-6 shadow-lg backdrop-blur-sm fade-in">
+    <h1 class="text-2xl md:text-3xl font-bold text-center mb-4">🎬 Movie Caption & Hashtag Generator (Gratis)</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+      <input id="movieInput" placeholder="Masukkan judul film (contoh: Purple Hearts)"
+             class="col-span-2 p-3 rounded text-black focus:outline-none" />
+
+      <select id="languageSelect" class="p-3 rounded text-black">
+        <option value="mix">🌍 Global Mix</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="id">🇮🇩 Bahasa Indonesia</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <select id="platformSelect" class="p-3 rounded text-black">
+        <option value="instagram">📸 Instagram</option>
+        <option value="facebook">📘 Facebook</option>
+        <option value="twitter">🐦 Twitter</option>
+      </select>
+
+      <select id="regionSelect" class="p-3 rounded text-black">
+        <option value="global">🌍 Global</option>
+        <option value="id">🇮🇩 Indonesia</option>
+        <option value="us">🇺🇸 USA</option>
+        <option value="it">🇮🇹 Italy</option>
+        <option value="jp">🇯🇵 Japan</option>
+        <option value="br">🇧🇷 Brazil</option>
+      </select>
+
+      <div class="flex items-center">
+        <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded font-semibold">🎬 Generate Caption & Hashtag</button>
+      </div>
+    </div>
+
+    <p id="note" class="small-muted mb-3">Catatan: Menggunakan proxy publik untuk ambil artikel & tag. Kadang butuh beberapa detik; kalau gagal, fallback ke template.</p>
+
+    <div id="loading" class="hidden mb-4 small-muted">Mencari & meringkas...<span class="loader"></span></div>
+
+    <div id="result" class="hidden bg-gray-900/50 p-4 rounded-md">
+      <p class="font-semibold">💬 Caption:</p>
+      <p id="caption" class="italic mb-2"></p>
+
+      <div class="mb-2">
+        <p id="cta" class="text-blue-300 font-medium whitespace-pre-wrap"></p>
+      </div>
+
+      <p id="hashtags" class="text-sm mb-3"></p>
+
+      <div class="flex gap-2">
+        <button id="copyBtn" class="flex-1 bg-green-600 hover:bg-green-700 p-2 rounded">📋 Salin Caption + Hashtag</button>
+        <button id="copyForPost" class="flex-1 bg-indigo-600 hover:bg-indigo-700 p-2 rounded">🔗 Salin Tanpa Hashtag</button>
+        <button id="clearBtn" class="flex-1 bg-red-600 hover:bg-red-700 p-2 rounded">🗑️ Hapus</button>
+      </div>
+
+      <p id="sourceUrl" class="small-muted mt-3 break-words"></p>
+    </div>
+
+    <div id="errorBox" class="hidden mt-3 p-3 rounded bg-red-700/40 text-sm"></div>
+    <div class="mt-4 small-muted">Built free — but kalau mau deploy/optimasi, kasih tau gue bro.</div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Config & utilities
+    // -----------------------------
+    const jinaProxy = 'https://r.jina.ai/http://';
+    const allOrigins = 'https://api.allorigins.win/get?url=';
+    const blogLink = 'https://dicakundicakun.blogspot.com/';
+
+    function el(id){ return document.getElementById(id); }
+    function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+    function splitSentences(text){
+      return text
+        .replace(/\n+/g,'. ')
+        .replace(/\s+/g,' ')
+        .split(/(?<=\.)\s+/)
+        .map(s=>s.trim())
+        .filter(Boolean);
+    }
+
+    function summarizeByScore(text, title, maxChars){
+      const sents = splitSentences(text);
+      if(sents.length === 0) return '';
+      const titleWords = title.toLowerCase().split(/\W+/).filter(Boolean);
+      const scored = sents.map(s=>{
+        const lw = s.toLowerCase();
+        let score = Math.min(1, s.length/200);
+        for(const w of titleWords){
+          if(w.length>2 && lw.includes(w)) score += 1.6;
+        }
+        if(lw.match(/\b(love|death|war|murder|scary|thriller|romance|beautiful|stunning|review|scene|performance|story|heart|emotion)\b/)) score += 0.8;
+        return {s, score};
+      });
+      scored.sort((a,b)=>b.score - a.score);
+      let out = '';
+      for(const item of scored){
+        if(!out.includes(item.s)){
+          const candidate = out ? (out + ' ' + item.s) : item.s;
+          if(candidate.length <= maxChars) out = candidate;
+        }
+      }
+      if(!out){
+        out = sents.slice(0, Math.min(3, sents.length)).join(' ');
+        if(out.length > maxChars) out = out.slice(0, maxChars-3) + '...';
+      }
+      return out.trim();
+    }
+
+    function templateCaption(title, genre, lang){
+      const templates = {
+        romance: {
+          id: [
+            `"${title}" mengajarkan bahwa cinta sejati tak pernah padam. ❤️`,
+            `"${title}" membuat kita percaya pada cinta sejati. 💞`
+          ],
+          en: [
+            `"${title}" captures a love that refuses to let go. 💜`,
+            `"${title}" is a heart-aching romance you can't miss.`
+          ],
+          mix: [
+            `"${title}" — love that hits deep. 💞`,
+            `"${title}" membuat kita percaya pada cinta sejati. 💖`
+          ]
+        },
+        action: {
+          id: [`"${title}" penuh aksi dan adrenalin! 💥`],
+          en: [`"${title}" — pure action-packed thrill! 🔥`],
+          mix: [`"${title}" — fast, furious, unstoppable. ⚡`]
+        },
+        horror: {
+          id: [`"${title}" bakal bikin kamu susah tidur... 👻`],
+          en: [`"${title}" will haunt your dreams. 💀`],
+          mix: [`"${title}" — not for the faint-hearted. 😱`]
+        },
+        drama: {
+          id: [`"${title}" — kisah yang menyentuh hati dan penuh makna. 💔`],
+          en: [`"${title}" — a deeply moving story. 🎭`],
+          mix: [`"${title}" — a touching cinematic journey.`]
+        },
+        comedy: {
+          id: [`"${title}" bikin ngakak tanpa henti! 😂`],
+          en: [`"${title}" is laugh-out-loud funny! 😂`],
+          mix: [`"${title}" — pure fun and laughter.`]
+        },
+        general: {
+          id: [`🎬 "${title}" wajib ditonton!`],
+          en: [`🎬 "${title}" is a must-watch!`],
+          mix: [`🎬 "${title}" — a ride worth your time.`]
+        }
+      };
+      const cat = templates[genre] ? genre : 'general';
+      const arr = templates[cat][lang] || templates[cat]['mix'] || templates['general']['mix'];
+      return arr[Math.floor(Math.random()*arr.length)];
+    }
+
+    function detectGenre(title){
+      const lower = title.toLowerCase();
+      if (lower.match(/love|heart|romance|kiss|wedding|valentine|sweet/)) return "romance";
+      if (lower.match(/war|fight|battle|mission|fast|furious|gun|soldier|hero/)) return "action";
+      if (lower.match(/ghost|dead|dark|devil|fear|scream|haunt|zombie|evil/)) return "horror";
+      if (lower.match(/space|galaxy|alien|robot|future|time|star/)) return "sci-fi";
+      if (lower.match(/sad|family|drama|life|tears|story|emotion/)) return "drama";
+      if (lower.match(/funny|comedy|laugh|holiday|friends|trip/)) return "comedy";
+      return "general";
+    }
+
+    // region helper: map code to friendly name and regional hashtag hints
+    const regionInfo = {
+      global: {name:'Global', hintTags: ['#Movie','#Film','#NowTrending']},
+      id: {name:'Indonesia', hintTags: ['#FilmIndonesia','#NetflixID','#FilmIndonesia']},
+      us: {name:'USA', hintTags: ['#Hollywood','#Netflix','#NowPlaying']},
+      it: {name:'Italy', hintTags: ['#FilmItalia','#Cinema','#CinemaItaly']},
+      jp: {name:'Japan', hintTags: ['#映画','#JapanCinema','#Anime']},
+      br: {name:'Brazil', hintTags: ['#CinemaBrasil','#Filme','#Cultura']},
+    };
+
+    async function findTopArticleUrl(query, regionCode='global', mode='news'){
+      try {
+        // Build region-augmented query
+        const regionName = regionInfo[regionCode] ? regionInfo[regionCode].name : '';
+        const fullQ = query + (regionCode !== 'global' ? (' ' + regionName) : '');
+        const searchQ = encodeURIComponent(fullQ + (mode==='reviews' ? ' movie review' : ' movie'));
+        const ddgUrl = `https://html.duckduckgo.com/html?q=${searchQ}`;
+        const proxyUrl = jinaProxy + ddgUrl.replace(/^https?:\/\//,'');
+        const resp = await fetch(proxyUrl);
+        if(!resp.ok) throw new Error('search-proxy-fail');
+        const html = await resp.text();
+
+        // Regex for links
+        const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>/g;
+        let m;
+        while((m = linkRegex.exec(html)) !== null){
+          const url = m[1];
+          if(!url) continue;
+          if(url.startsWith('/')) continue;
+          if(url.startsWith('javascript:')) continue;
+          if(url.startsWith('http') || url.startsWith('https')) {
+            if(!url.includes('duckduckgo.com') && !url.includes('facebook.com') && !url.includes('instagram.com') && !url.includes('twitter.com')){
+              return url;
+            }
+          }
+        }
+        const anyHttp = html.match(/https?:\/\/[^"'\s<>]+/);
+        if(anyHttp) return anyHttp[0];
+        return null;
+      } catch(e){
+        console.warn('findTopArticleUrl err', e);
+        return null;
+      }
+    }
+
+    async function fetchArticleText(url){
+      try {
+        if(!url) throw new Error('no-url');
+        const cleaned = url.replace(/^https?:\/\//,'');
+        const proxy = jinaProxy + cleaned;
+        const r = await fetch(proxy);
+        if(!r.ok) throw new Error('article-proxy-fail');
+        const txt = await r.text();
+        const stripped = txt.replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g,' ').trim();
+        return stripped;
+      } catch(e){
+        console.warn('fetchArticleText err', e);
+        return null;
+      }
+    }
+
+    async function fetchHashtags(title, regionCode='global'){
+      try {
+        const slug = title.replace(/\s+/g,'');
+        const url = `https://best-hashtags.com/hashtag/${encodeURIComponent(slug)}/`;
+        const proxy = allOrigins + encodeURIComponent(url);
+        const r = await fetch(proxy);
+        if(!r.ok) throw new Error('hashtag-proxy-fail');
+        const json = await r.json();
+        const html = json.contents || '';
+        const tags = [...html.matchAll(/#\w+/g)].map(m=>m[0]).slice(0,8);
+        if(tags && tags.length >= 4){
+          // augment with region hints if needed
+          const hints = regionInfo[regionCode] ? regionInfo[regionCode].hintTags : [];
+          const combined = Array.from(new Set([...tags, ...hints])).slice(0,8);
+          return combined;
+        }
+        // fallback: generate from title + region hints
+        const twords = title.split(/\W+/).filter(w=>w.length>2).slice(0,4).map(w=>'#'+w.replace(/[^\w]/g,''));
+        const base = ["#Movie","#Film","#NowTrending","#MustWatch"];
+        const hints = regionInfo[regionCode] ? regionInfo[regionCode].hintTags : [];
+        return Array.from(new Set([...twords, ...hints, ...base])).slice(0,8);
+      } catch(e){
+        console.warn('fetchHashtags err', e);
+        const twords = title.split(/\W+/).filter(w=>w.length>2).slice(0,4).map(w=>'#'+w.replace(/[^\w]/g,''));
+        const base = ["#Movie","#Film","#NowTrending","#MustWatch"];
+        const hints = regionInfo[regionCode] ? regionInfo[regionCode].hintTags : [];
+        return Array.from(new Set([...twords, ...hints, ...base])).slice(0,8);
+      }
+    }
+
+    // -----------------------------
+    // Main flow
+    // -----------------------------
+    el('generateBtn').addEventListener('click', async ()=>{
+      el('errorBox').classList.add('hidden');
+      el('result').classList.add('hidden');
+      el('loading').classList.remove('hidden');
+
+      const title = el('movieInput').value.trim();
+      const lang = el('languageSelect').value; // 'id' 'en' 'mix'
+      const platform = el('platformSelect').value; // instagram facebook twitter
+      const region = el('regionSelect').value; // global, id, us, it, jp, br
+
+      if(!title){
+        alert('Masukkan judul film dulu bro!');
+        el('loading').classList.add('hidden');
+        return;
+      }
+
+      try {
+        // 1) Find top article URL (region aware)
+        let articleUrl = await findTopArticleUrl(title + ' movie', region, 'news');
+        let articleText = null;
+        if(articleUrl){
+          articleText = await fetchArticleText(articleUrl);
+        }
+
+        // 2) fallback search for review if insufficient content
+        if(!articleText || articleText.length < 200){
+          articleUrl = await findTopArticleUrl(title + ' movie review', region, 'reviews');
+          if(articleUrl) articleText = await fetchArticleText(articleUrl);
+        }
+
+        // 3) fallback to Google News via jina if still missing
+        if(!articleText || articleText.length < 200){
+          const gnewsUrl = `https://news.google.com/search?q=${encodeURIComponent(title + (region==='global' ? '' : ' ' + (regionInfo[region].name)))}`;
+          const proxyG = jinaProxy + gnewsUrl.replace(/^https?:\/\//,'');
+          const r = await fetch(proxyG);
+          if(r.ok){
+            const html = await r.text();
+            const m = html.match(/href="([^"]+)"/);
+            if(m && m[1]) {
+              let link = m[1];
+              if(link.startsWith('./')) link = 'https://news.google.com' + link.slice(1);
+              const t = await fetchArticleText(link);
+              if(t && t.length>200) articleText = t;
+              if(!articleUrl) articleUrl = link;
+            }
+          }
+        }
+
+        // 4) Determine platform char limit
+        let maxChars = 1000;
+        if(platform === 'twitter') maxChars = 250;
+        if(platform === 'instagram') maxChars = 1000;
+        if(platform === 'facebook') maxChars = 1500;
+
+        // 5) Make final caption
+        const genre = detectGenre(title);
+        let finalCaption = '';
+        if(articleText && articleText.length > 150){
+          finalCaption = summarizeByScore(articleText, title, Math.min(maxChars, 500));
+        } else {
+          finalCaption = templateCaption(title, genre, lang);
+        }
+        if(platform==='twitter' && finalCaption.length > 250) finalCaption = finalCaption.slice(0,247) + '...';
+
+        // 6) Hashtags (8)
+        const hashtags = await fetchHashtags(title, region);
+
+        // 7) CTA based on platform
+        let cta = '';
+        if(platform === 'facebook' || platform === 'instagram'){
+          cta = '🎬 Full movie in bio';
+        } else if(platform === 'twitter'){
+          cta = '🎬 Full movie 🎬👇\n' + blogLink;
+        }
+
+        // 8) Region note (small)
+        const regionNote = regionInfo[region] ? ('Target region: ' + regionInfo[region].name) : '';
+
+        // Render
+        el('caption').innerText = finalCaption;
+        el('cta').innerText = cta;
+        el('hashtags').innerText = hashtags.join(' ');
+        el('sourceUrl').innerText = (articleUrl ? ('Source: ' + articleUrl) : ('Source: (fallback template)')) + (regionNote ? ' • ' + regionNote : '');
+        el('result').classList.remove('hidden');
+
+        // Save
+        localStorage.setItem('lastResult', JSON.stringify({
+          title, platform, lang, region, caption: finalCaption, cta, hashtags, source: articleUrl
+        }));
+
+      } catch(err){
+        console.error(err);
+        el('errorBox').innerText = 'Gagal mengambil artikel otomatis — memakai template fallback.';
+        el('errorBox').classList.remove('hidden');
+
+        // fallback
+        const genre = detectGenre(title);
+        const caption = templateCaption(title, genre, lang);
+        const hashtags = await fetchHashtags(title, region);
+        const cta = platform==='twitter' ? ('🎬 Full movie 🎬👇\n'+blogLink) : '🎬 Full movie in bio';
+        el('caption').innerText = caption;
+        el('cta').innerText = cta;
+        el('hashtags').innerText = hashtags.join(' ');
+        el('result').classList.remove('hidden');
+      } finally {
+        el('loading').classList.add('hidden');
+      }
+    });
+
+    // copy full (caption + CTA + hashtags)
+    el('copyBtn').addEventListener('click', ()=>{
+      const caption = el('caption').innerText;
+      const cta = el('cta').innerText;
+      const tags = el('hashtags').innerText;
+      const full = caption + '\n\n' + cta + '\n\n' + tags;
+      navigator.clipboard.writeText(full).then(()=> alert('✅ Caption + CTA + Hashtag disalin!'));
+    });
+
+    // copy only caption + CTA
+    el('copyForPost').addEventListener('click', ()=>{
+      const caption = el('caption').innerText;
+      const cta = el('cta').innerText;
+      const full = caption + '\n\n' + cta;
+      navigator.clipboard.writeText(full).then(()=> alert('✅ Caption + CTA disalin (tanpa hashtag)!'));
+    });
+
+    el('clearBtn').addEventListener('click', ()=>{
+      localStorage.removeItem('lastResult');
+      el('result').classList.add('hidden');
+      el('movieInput').value = '';
+      el('sourceUrl').innerText = '';
+    });
+
+    // load last
+    window.addEventListener('load', ()=>{
+      const last = localStorage.getItem('lastResult');
+      if(last){
+        const {title, caption, cta, hashtags, source, platform, lang, region} = JSON.parse(last);
+        el('movieInput').value = title || '';
+        el('caption').innerText = caption || '';
+        el('cta').innerText = cta || '';
+        el('hashtags').innerText = (hashtags||[]).join(' ');
+        el('sourceUrl').innerText = source ? ('Source: '+source) : '';
+        if(platform) el('platformSelect').value = platform;
+        if(lang) el('languageSelect').value = lang;
+        if(region) el('regionSelect').value = region;
+        if(caption) el('result').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
