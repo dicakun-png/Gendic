@@ -1,191 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🎬 Caption & Hashtag Generator</title>
-  <style>
-    body {
-      background-color: #0f0f0f;
-      color: #f0f0f0;
-      font-family: "Poppins", sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    h1 {
-      color: #ff3c3c;
-      margin-bottom: 10px;
-    }
-    .btn-group {
-      margin: 10px 0;
-    }
-    button {
-      background-color: #222;
-      color: #fff;
-      border: 1px solid #ff3c3c;
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin: 4px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button.active, button:hover {
-      background-color: #ff3c3c;
-      color: #fff;
-    }
-    textarea {
-      width: 95%;
-      height: 160px;
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #1a1a1a;
-      color: #fff;
-      border: 1px solid #ff3c3c;
-      border-radius: 8px;
-      resize: none;
-      font-size: 15px;
-    }
-    input {
-      width: 80%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ff3c3c;
-      background: #1a1a1a;
-      color: white;
-      font-size: 15px;
-    }
-    .generate-btn {
-      background-color: #ff3c3c;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 12px 20px;
-      margin-top: 15px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: 0.3s;
-    }
-    .generate-btn:hover {
-      background-color: #ff5c5c;
-    }
-    footer {
-      margin-top: 30px;
-      font-size: 13px;
-      color: #777;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dicakun Hashtag Generator</title>
+<style>
+  body {
+    background: #fff;
+    color: #111;
+    font-family: "Poppins", sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background: linear-gradient(90deg, #ff0000, #b30000);
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 1.8em;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  header span.logo {
+    display: inline-block;
+    background: #fff;
+    color: #b30000;
+    padding: 5px 10px;
+    border-radius: 8px;
+    margin-right: 8px;
+    font-weight: 900;
+  }
+  .container {
+    max-width: 700px;
+    margin: 20px auto;
+    background: #f7f7f7;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    padding: 20px;
+  }
+  input, select, button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 1em;
+  }
+  button {
+    background: #b30000;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: 0.3s;
+  }
+  button:hover { background: #ff0000; }
+  .results {
+    margin-top: 20px;
+  }
+  .pkg {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  .pkg h4 {
+    margin: 0 0 5px 0;
+    color: #b30000;
+  }
+  .pkg pre {
+    background: #f2f2f2;
+    padding: 8px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  .copy-btn {
+    background: #b30000;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    float: right;
+  }
+  .copy-btn:hover { background: #ff0000; }
+  #error {
+    color: red;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <h1>🎬 Caption & Hashtag Generator</h1>
-  <p>Masukkan judul film lalu pilih platform, bahasa, dan region:</p>
 
-  <input type="text" id="movieTitle" placeholder="Ketik judul film di sini..." />
+<header><span class="logo">Dicakun</span>Hashtag Generator</header>
 
-  <h3>Pilih Platform:</h3>
-  <div class="btn-group" id="platformGroup">
-    <button data-value="instagram">Instagram</button>
-    <button data-value="facebook">Facebook</button>
-    <button data-value="twitter">Twitter</button>
-  </div>
+<div class="container">
+  <label>Masukkan API Key SerpApi:</label>
+  <input type="password" id="apiKey" placeholder="Masukkan API Key SerpApi...">
+  <button onclick="saveKey()">Simpan 🔑</button>
 
-  <h3>Pilih Bahasa:</h3>
-  <div class="btn-group" id="languageGroup">
-    <button data-value="id">Indonesia</button>
-    <button data-value="en">English</button>
-  </div>
+  <label>Judul Movie:</label>
+  <input type="text" id="movieTitle" placeholder="Contoh: Dune Part Two">
 
-  <h3>Pilih Region:</h3>
-  <div class="btn-group" id="regionGroup">
-    <button data-value="indonesia">🇮🇩 Indonesia</button>
-    <button data-value="usa">🇺🇸 USA</button>
-    <button data-value="italy">🇮🇹 Italy</button>
-    <button data-value="japan">🇯🇵 Japan</button>
-    <button data-value="brazil">🇧🇷 Brazil</button>
-    <button data-value="global">🌍 Global</button>
-  </div>
+  <label>Pilih Region:</label>
+  <select id="region">
+    <option value="id">🇮🇩 Indonesia</option>
+    <option value="us">🇺🇸 United States</option>
+    <option value="gb">🇬🇧 United Kingdom</option>
+    <option value="jp">🇯🇵 Japan</option>
+    <option value="kr">🇰🇷 South Korea</option>
+    <option value="fr">🇫🇷 France</option>
+    <option value="de">🇩🇪 Germany</option>
+    <option value="it">🇮🇹 Italy</option>
+    <option value="es">🇪🇸 Spain</option>
+    <option value="br">🇧🇷 Brazil</option>
+    <option value="in">🇮🇳 India</option>
+    <option value="mx">🇲🇽 Mexico</option>
+    <option value="ru">🇷🇺 Russia</option>
+    <option value="ca">🇨🇦 Canada</option>
+    <option value="au">🇦🇺 Australia</option>
+    <option value="nl">🇳🇱 Netherlands</option>
+    <option value="th">🇹🇭 Thailand</option>
+    <option value="vn">🇻🇳 Vietnam</option>
+    <option value="ph">🇵🇭 Philippines</option>
+    <option value="ar">🇦🇷 Argentina</option>
+    <option value="sa">🇸🇦 Saudi Arabia</option>
+  </select>
 
-  <button class="generate-btn" onclick="generateCaption()">🎬 Generate Caption & Hashtag</button>
+  <button onclick="generateHashtags()">🎬 Generate Hashtag</button>
+  <div id="error"></div>
+  <div class="results" id="results"></div>
+</div>
 
-  <textarea id="result" readonly placeholder="Hasil caption & hashtag akan muncul di sini..."></textarea>
+<script>
+function saveKey() {
+  const key = document.getElementById("apiKey").value.trim();
+  if(!key){alert("Isi dulu API Key-nya bro!");return;}
+  localStorage.setItem("serpapi_key", key);
+  alert("API Key disimpan, siap dipakai!");
+}
 
-  <footer>© 2025 Caption Generator | Powered by Open Source</footer>
+async function generateHashtags() {
+  const movie = document.getElementById("movieTitle").value.trim();
+  const region = document.getElementById("region").value;
+  const API_KEY = (localStorage.getItem("serpapi_key") || "").trim();
+  const errorBox = document.getElementById("error");
+  errorBox.textContent = "";
+  const out = document.getElementById("results");
+  out.innerHTML = "";
 
-  <script>
-    let selectedPlatform = "";
-    let selectedLanguage = "";
-    let selectedRegion = "";
+  if(!API_KEY){errorBox.textContent="Masukkan API key dulu bro!";return;}
+  if(!movie){errorBox.textContent="Masukkan judul movie-nya dulu bro!";return;}
 
-    function setActive(groupId, value) {
-      const group = document.getElementById(groupId);
-      [...group.children].forEach(btn => {
-        btn.classList.remove("active");
-        if (btn.getAttribute("data-value") === value) {
-          btn.classList.add("active");
-        }
-      });
+  try {
+    const proxy = "https://api.allorigins.win/get?url=";
+    const q = `${movie} movie trending hashtags site:twitter.com OR site:instagram.com`;
+    const serpURL = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(q)}&num=20&gl=${region}&hl=${region}&no_cache=true&api_key=${API_KEY}`;
+    const url = proxy + encodeURIComponent(serpURL);
+    const resp = await fetch(url);
+    const raw = await resp.json();
+    const data = JSON.parse(raw.contents || "{}");
+
+    if(data.error){
+      errorBox.textContent = "❌ "+data.error;
+      return;
     }
 
-    document.querySelectorAll("#platformGroup button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        selectedPlatform = btn.getAttribute("data-value");
-        setActive("platformGroup", selectedPlatform);
-      })
-    );
+    const results = data.organic_results?.map(r => r.title).filter(Boolean) || [];
+    if(results.length === 0){errorBox.textContent="Tidak ditemukan hasil relevan.";return;}
 
-    document.querySelectorAll("#languageGroup button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        selectedLanguage = btn.getAttribute("data-value");
-        setActive("languageGroup", selectedLanguage);
-      })
-    );
+    // ambil hanya kata yang tampak seperti hashtag
+    const allText = results.join(" ");
+    const tags = [...new Set(allText.match(/#[A-Za-z0-9_]+/g))].slice(0,80);
+    if(tags.length===0){errorBox.textContent="Tidak ditemukan hashtag viral, coba judul lain.";return;}
 
-    document.querySelectorAll("#regionGroup button").forEach(btn =>
-      btn.addEventListener("click", () => {
-        selectedRegion = btn.getAttribute("data-value");
-        setActive("regionGroup", selectedRegion);
-      })
-    );
-
-    function randomHashtags(region) {
-      const tags = {
-        indonesia: ["#FilmIndonesia","#Viral","#BaperBanget","#MovieTime","#Sinema","#FilmBaru","#Trending","#LoveStory"],
-        usa: ["#NowWatching","#MovieNight","#Cinephile","#ViralNow","#Hollywood","#Trending","#FilmLovers","#Cinema"],
-        italy: ["#Cinema","#Film","#TrendingItaly","#Amore","#MovieVibes","#Viral","#Streaming","#Passione"],
-        japan: ["#映画","#アニメ","#トレンド","#ムービー","#CinemaJP","#Viral","#Kawaii","#Story"],
-        brazil: ["#Filme","#CinemaBrasil","#Viral","#Romance","#Tendência","#FilmeNovo","#Streaming","#História"],
-        global: ["#Movie","#Viral","#Cinema","#TrendingNow","#Film","#Streaming","#Love","#MustWatch"]
-      };
-      return tags[region] || tags.global;
+    for(let i=0;i<10;i++){
+      const start = i*8;
+      const pkg = tags.slice(start,start+8);
+      if(pkg.length===0) break;
+      const div = document.createElement("div");
+      div.className = "pkg";
+      div.innerHTML = `<h4>Paket ${i+1}</h4>
+        <pre id="pkg${i}">${pkg.join(" ")}</pre>
+        <button class="copy-btn" onclick="copyText('pkg${i}')">Copy Paket Ini</button>`;
+      out.appendChild(div);
     }
 
-    function generateCaption() {
-      const title = document.getElementById("movieTitle").value.trim();
-      const output = document.getElementById("result");
-      if (!title || !selectedPlatform || !selectedLanguage || !selectedRegion) {
-        output.value = "⚠️ Mohon lengkapi semua pilihan dulu bro!";
-        return;
-      }
+  } catch(err) {
+    console.error(err);
+    errorBox.textContent = "❌ Gagal mengambil data. Cek API Key atau koneksi.";
+  }
+}
 
-      const hashtags = randomHashtags(selectedRegion).join(" ");
-      let caption = "";
+function copyText(id){
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text);
+  alert("✅ Paket disalin!");
+}
+</script>
 
-      // CTA otomatis berdasarkan platform
-      let cta = "";
-      if (selectedPlatform === "instagram" || selectedPlatform === "facebook") {
-        cta = "🎬 Full movie in bio";
-      } else if (selectedPlatform === "twitter") {
-        cta = "🎬 Full movie 👇\nhttps://dicakundicakun.blogspot.com/";
-      }
-
-      // Caption dasar
-      if (selectedLanguage === "id") {
-        caption = `Film "${title}" lagi jadi sorotan di ${selectedRegion.toUpperCase()}! Ceritanya bikin penasaran dan wajib banget ditonton!🔥\n\n${cta}\n\n${hashtags}`;
-      } else {
-        caption = `The movie "${title}" is trending in ${selectedRegion.toUpperCase()}! A story you can't miss — full of emotions and excitement!🔥\n\n${cta}\n\n${hashtags}`;
-      }
-
-      output.value = caption;
-    }
-  </script>
 </body>
 </html>
